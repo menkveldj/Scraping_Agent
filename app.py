@@ -1,7 +1,6 @@
 
-from time import sleep
-from firecrawl import FirecrawlApp
-from openai import OpenAI
+from save_raw_data import save_raw_data
+from scraper import crawl_data
 from dotenv import load_dotenv
 import os 
 import json 
@@ -9,164 +8,6 @@ import pprint
 import pandas as pd 
 from datetime import datetime
 
-def crawl_data(url):
-    load_dotenv()
-
-    # Initialize the FirecrawlApp with your API key
-    app = FirecrawlApp(api_key=os.getenv('FIRECRAWL_API_KEY'))
-    
-    params = {
-        'crawlerOptions': {
-            'excludes': [],
-            'includes': [], # leave empty for all pages
-            'limit': 2,
-        },
-        'pageOptions': {
-            'onlyMainContent': True
-        }
-    }
-    crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
-    print("Crawl job: ", crawl_job_id)
-
-    job_active = True
-    while job_active:
-        job_status = app.check_crawl_status(crawl_job_id)
-        job_active = job_status['status'] == 'active'
-        print(f"Job status: {job_status['status']}, {job_status['current']}/{job_status['total']} pages scraped")
-        sleep(5)
-
-    # Check if 'markdown' key exists in the scraped data
-    return job_status
-
-def scrape_data(url):
-    load_dotenv()
-
-    # Initialize the FirecrawlApp with your API key
-    app = FirecrawlApp(api_key=os.getenv('FIRECRAWL_API_KEY'))
-    
-    # Scrape a single URL
-    scraped_data = app.scrape_url(url,{'pageOptions':{
-        'onlyMainContent': True,
-        'waitFor': 5000}
-        })
-
-    # Check if 'markdown' key exists in the scraped data
-    if 'markdown' in scraped_data:
-        return scraped_data
-    else:
-        raise KeyError("The key 'markdown' does not exist in the scraped data.")
-    
-def save_raw_data(raw_data, sitename, timestamp, output_folder='output'):
-    # Ensure the output folder exists
-    output_folder = os.path.join(output_folder, sitename, timestamp)
-    os.makedirs(output_folder, exist_ok=True)
-    
-    # Extract the URL from the raw data
-    url = raw_data['metadata']['sourceURL']
-    url = url.replace("https://","")
-    url = url.replace("http://","")
-    url = url.rstrip("/")
-    url = url.replace("/","|")
-
-
-    print("url: ", url)
-
-    # Save the raw meta data with url in filename
-    raw_output_path = os.path.join(output_folder, f'rawData{url}.content.md')
-    with open(raw_output_path, 'w', encoding='utf-8') as f:
-        f.write(raw_data['markdown'])
-    print(f"Raw markdown_content saved to {raw_output_path}")
-
-    # Save the raw markdown data with url in filename
-    raw_output_path = os.path.join(output_folder, f'rawData_{url}.meta.json')
-    with open(raw_output_path, 'w', encoding='utf-8') as fp:
-        json.dump(raw_data['metadata'], fp)
-    print(f"Raw metadata saved to {raw_output_path}")
-
-
-
-def format_data(data, fields=None):
-    load_dotenv()
-    # Instantiate the OpenAI client
-    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
-    # Assign default fields if not provided
-    if fields is None:
-        fields = ["Address", "Real Estate Agency", "Price", "Beds", "Baths", "Sqft", "Home Type", "Listing Age", "Picture of home URL", "Listing URL"]
-
-    # Define system message content
-    system_message = f"""You are an intelligent text extraction and conversion assistant. Your task is to extract structured information 
-                        from the given text and convert it into a pure JSON format. The JSON should contain only the structured data extracted from the text, 
-                        with no additional commentary, explanations, or extraneous information. 
-                        You could encounter cases where you can't find the data of the fields you have to extract or the data will be in a foreign language.
-                        Please process the following text and provide the output in pure JSON format with no words before or after the JSON:"""
-
-    # Define user message content
-    user_message = f"Extract the following information from the provided text:\nPage content:\n\n{data}\n\nInformation to extract: {fields}"
-
-
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        response_format={ "type": "json_object" },
-        messages=[
-            {
-                "role": "system",
-                "content": system_message
-            },
-            {
-                "role": "user",
-                "content": user_message
-            }
-        ]
-    )
-
-    # Check if the response contains the expected data
-    if response and response.choices:
-        formatted_data = response.choices[0].message.content.strip()
-        print(f"Formatted data received from API: {formatted_data}")
-
-        try:
-            parsed_json = json.loads(formatted_data)
-        except json.JSONDecodeError as e:
-            print(f"JSON decoding error: {e}")
-            print(f"Formatted data that caused the error: {formatted_data}")
-            raise ValueError("The formatted data could not be decoded into JSON.")
-        
-        return parsed_json
-    else:
-        raise ValueError("The OpenAI API response did not contain the expected choices data.")
-    
-
-def save_formatted_data(formatted_data, timestamp, output_folder='output'):
-    # Ensure the output folder exists
-    os.makedirs(output_folder, exist_ok=True)
-    
-    # Save the formatted data as JSON with timestamp in filename
-    output_path = os.path.join(output_folder, f'sorted_data_{timestamp}.json')
-
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(formatted_data, f, indent=4)
-    print(f"Formatted data saved to {output_path}")
-
-    # Check if data is a dictionary and contains exactly one key
-    if isinstance(formatted_data, dict) and len(formatted_data) == 1:
-        key = next(iter(formatted_data))  # Get the single key
-        formatted_data = formatted_data[key]
-
-    
-    # Convert the formatted data to a pandas DataFrame
-    df = pd.DataFrame(formatted_data)
-
-    # Convert the formatted data to a pandas DataFrame
-    if isinstance(formatted_data, dict):
-        formatted_data = [formatted_data]
-
-    df = pd.DataFrame(formatted_data)
-
-    # Save the DataFrame to an Excel file
-    excel_output_path = os.path.join(output_folder, f'sorted_data_{timestamp}.xlsx')
-    df.to_excel(excel_output_path, index=False)
-    print(f"Formatted data saved to Excel at {excel_output_path}")
 
 if __name__ == "__main__":
     # Scrape a single URL
@@ -177,6 +18,8 @@ if __name__ == "__main__":
     
 
     try:
+        load_dotenv()
+        
         # Extract sitename from URL
         sitename: str = url.split('/')[2]
         timestamp_start = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -188,11 +31,15 @@ if __name__ == "__main__":
         # save_raw_data(raw_data, sitename, timestamp_start)
         
         raw_data = crawl_data(url)
-        pprint.pp(raw_data)
+        # pprint.pp(raw_data)
 
-        for raw_page_data in raw_data:
-            save_raw_data(raw_page_data, sitename, timestamp_start)
         
+        organized_data = {}
+        sitemap = {}
+        print(f"Processing raw data for {sitename}...")
+        save_raw_data(raw_data, sitename, timestamp_start, organized_data, sitemap)
+
+
         # Format data
         # formatted_data = format_data(raw_data,phone_fields)
         
@@ -204,4 +51,4 @@ if __name__ == "__main__":
         print(f"Finished scraping for {sitename} at {timestamp_end}. Duration: {duration}")
         
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred: {e.with_traceback}")
