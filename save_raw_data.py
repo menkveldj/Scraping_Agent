@@ -3,13 +3,13 @@ import os
 
 
 
-def save_raw_data(raw_data, sitename, timestamp, organized_data, sitemap, raw_output_folder='output'):
+def save_raw_data(raw_data, sitename, timestamp, organized_data, sitemap, output_folder='output'):
    
     # Ensure the output folder exists
-    root_output_folder = os.path.join(raw_output_folder, sitename, timestamp)
-    os.makedirs(raw_output_folder, exist_ok=True)
-    raw_output_folder = os.path.join(root_output_folder,'raw_data')
-    os.makedirs(raw_output_folder, exist_ok=True)
+    root_output_folder = os.path.join(output_folder, sitename, timestamp)
+    os.makedirs(output_folder, exist_ok=True)
+    output_folder = os.path.join(root_output_folder,'raw_data')
+    os.makedirs(output_folder, exist_ok=True)
 
     for raw_page_data in raw_data['data']:
 
@@ -40,17 +40,19 @@ def save_raw_data(raw_data, sitename, timestamp, organized_data, sitemap, raw_ou
 
         fileNameFriendlyUrl = url.replace("/","|")
         # Save the raw meta data with url in filename
-        raw_output_path = os.path.join(raw_output_folder, f'rawData{fileNameFriendlyUrl}.content.md')
+        raw_output_path = os.path.join(output_folder, f'rawData{fileNameFriendlyUrl}.content.md')
         with open(raw_output_path, 'w', encoding='utf-8') as f:
             f.write(raw_page_data['markdown'])
 
         # Save the raw markdown data with url in filename
-        raw_output_path = os.path.join(raw_output_folder, f'rawData_{fileNameFriendlyUrl}.meta.json')
+        raw_output_path = os.path.join(output_folder, f'rawData_{fileNameFriendlyUrl}.meta.json')
         with open(raw_output_path, 'w', encoding='utf-8') as fp:
-            json.dump(raw_page_data['metadata'], fp)
+            json.dump(raw_page_data['metadata'], fp, indent=4)
 
     # Save the sitemap
     raw_output_path = os.path.join(root_output_folder, f'sitemap_{fileNameFriendlyUrl}.json')
     with open(raw_output_path, 'w', encoding='utf-8') as fp:
-        json.dump(sitemap, fp)
+        json.dump(sitemap, fp, indent=4)
+
+
 

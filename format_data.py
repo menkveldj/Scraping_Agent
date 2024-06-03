@@ -1,32 +1,33 @@
 import json
 import os
+from openai import OpenAI
+import pandas as pd
 
 
-def save_formatted_data(formatted_data, timestamp, output_folder='output'):
-    # Ensure the output folder exists
-    os.makedirs(output_folder, exist_ok=True)
+
+
+def save_formatted_data(organized_data, sitename, timestamp, formatted_data, output_folder='output'):
     
-    # Save the formatted data as JSON with timestamp in filename
-    output_path = os.path.join(output_folder, f'sorted_data_{timestamp}.json')
-
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(formatted_data, f, indent=4)
-    print(f"Formatted data saved to {output_path}")
+    # Ensure the output folder exists
+    root_output_folder = os.path.join(output_folder, sitename, timestamp)
+    os.makedirs(output_folder, exist_ok=True)
+    output_folder = os.path.join(root_output_folder,'processed_data')
+    os.makedirs(output_folder, exist_ok=True)
 
     # Check if data is a dictionary and contains exactly one key
-    if isinstance(formatted_data, dict) and len(formatted_data) == 1:
-        key = next(iter(formatted_data))  # Get the single key
-        formatted_data = formatted_data[key]
+    if isinstance(organized_data, dict) and len(organized_data) == 1:
+        key = next(iter(organized_data))  # Get the single key
+        organized_data = organized_data[key]
 
     
     # Convert the formatted data to a pandas DataFrame
-    df = pd.DataFrame(formatted_data)
+    df = pd.DataFrame(organized_data)
 
     # Convert the formatted data to a pandas DataFrame
-    if isinstance(formatted_data, dict):
-        formatted_data = [formatted_data]
+    if isinstance(organized_data, dict):
+        organized_data = [organized_data]
 
-    df = pd.DataFrame(formatted_data)
+    df = pd.DataFrame(organized_data)
 
     # Save the DataFrame to an Excel file
     excel_output_path = os.path.join(output_folder, f'sorted_data_{timestamp}.xlsx')
@@ -34,29 +35,27 @@ def save_formatted_data(formatted_data, timestamp, output_folder='output'):
     print(f"Formatted data saved to Excel at {excel_output_path}")
 
 
-def format_data(data, fields=None):
-    load_dotenv()
+def format_data(data):
     # Instantiate the OpenAI client
+    print("API Key: ", os.getenv('OPENAI_API_KEY'))
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
     # Assign default fields if not provided
-    if fields is None:
-        fields = ["Address", "Real Estate Agency", "Price", "Beds", "Baths", "Sqft", "Home Type", "Listing Age", "Picture of home URL", "Listing URL"]
+    # if fields is None:
+    # fields = ["Address", "Real Estate Agency", "Price", "Beds", "Baths", "Sqft", "Home Type", "Listing Age", "Picture of home URL", "Listing URL"]
 
     # Define system message content
-    system_message = f"""You are an intelligent text extraction and conversion assistant. Your task is to extract structured information 
-                        from the given text and convert it into a pure JSON format. The JSON should contain only the structured data extracted from the text, 
-                        with no additional commentary, explanations, or extraneous information. 
-                        You could encounter cases where you can't find the data of the fields you have to extract or the data will be in a foreign language.
-                        Please process the following text and provide the output in pure JSON format with no words before or after the JSON:"""
+    system_message = os.getenv('AI_SYSTEM_MESSAGE')
 
     # Define user message content
-    user_message = f"Extract the following information from the provided text:\nPage content:\n\n{data}\n\nInformation to extract: {fields}"
+    user_message = os.getenv('AI_USER_MESSAGE')
+    user_message = user_message + "Page Content:\n\n" + data
 
 
     response = client.chat.completions.create(
         model="gpt-4o",
-        response_format={ "type": "json_object" },
+        response_format={ "type": "text" },
+        # response_format={ "type": "json_object" },
         messages=[
             {
                 "role": "system",
@@ -71,17 +70,34 @@ def format_data(data, fields=None):
 
     # Check if the response contains the expected data
     if response and response.choices:
-        formatted_data = response.choices[0].message.content.strip()
+        formatted_data = response.choices[0].message.content
         print(f"Formatted data received from API: {formatted_data}")
 
-        try:
-            parsed_json = json.loads(formatted_data)
-        except json.JSONDecodeError as e:
-            print(f"JSON decoding error: {e}")
-            print(f"Formatted data that caused the error: {formatted_data}")
-            raise ValueError("The formatted data could not be decoded into JSON.")
+        # try:
+        #     parsed_json = json.loads(formatted_data)
+        # except json.JSONDecodeError as e:
+        #     print(f"JSON decoding error: {e}")
+        #     print(f"Formatted data that caused the error: {formatted_data}")
+        #     raise ValueError("The formatted data could not be decoded into JSON.")
 
-        return parsed_json
+        return formatted_data
     else:
         raise ValueError("The OpenAI API response did not contain the expected choices data.")
+    
+
+    # # Check if the response contains the expected data
+    # if response and response.choices:
+    #     formatted_data = response.choices[0].message.content.strip()
+    #     print(f"Formatted data received from API: {formatted_data}")
+
+    #     try:
+    #         parsed_json = json.loads(formatted_data)
+    #     except json.JSONDecodeError as e:
+    #         print(f"JSON decoding error: {e}")
+    #         print(f"Formatted data that caused the error: {formatted_data}")
+    #         raise ValueError("The formatted data could not be decoded into JSON.")
+
+    #     return parsed_json
+    # else:
+    #     raise ValueError("The OpenAI API response did not contain the expected choices data.")
     
