@@ -1,15 +1,46 @@
 
+from time import sleep
 from firecrawl import FirecrawlApp
 from openai import OpenAI
 from dotenv import load_dotenv
 import os 
 import json 
+import pprint
 import pandas as pd 
 from datetime import datetime
 
+def crawl_data(url):
+    load_dotenv()
+
+    # Initialize the FirecrawlApp with your API key
+    app = FirecrawlApp(api_key=os.getenv('FIRECRAWL_API_KEY'))
+    
+    params = {
+        'crawlerOptions': {
+            'excludes': [],
+            'includes': [], # leave empty for all pages
+            'limit': 2,
+        },
+        'pageOptions': {
+            'onlyMainContent': True
+        }
+    }
+    crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
+    print("Crawl job: ", crawl_job_id)
+
+    job_active = True
+    while job_active:
+        job_status = app.check_crawl_status(crawl_job_id)
+        job_active = job_status['status'] == 'active'
+        print(f"Job status: {job_status['status']}, {job_status['current']}/{job_status['total']} pages scraped")
+        sleep(5)
+
+    # Check if 'markdown' key exists in the scraped data
+    return job_status
 
 def scrape_data(url):
     load_dotenv()
+
     # Initialize the FirecrawlApp with your API key
     app = FirecrawlApp(api_key=os.getenv('FIRECRAWL_API_KEY'))
     
@@ -18,8 +49,6 @@ def scrape_data(url):
         'onlyMainContent': True,
         'waitFor': 5000}
         })
-    
-    # print(f"Scraped data: {scraped_data['metadata']}")
 
     # Check if 'markdown' key exists in the scraped data
     if 'markdown' in scraped_data:
@@ -27,9 +56,9 @@ def scrape_data(url):
     else:
         raise KeyError("The key 'markdown' does not exist in the scraped data.")
     
-def save_raw_data(raw_data, sitename, output_folder='output'):
+def save_raw_data(raw_data, sitename, timestamp, output_folder='output'):
     # Ensure the output folder exists
-    output_folder = os.path.join(output_folder, sitename)
+    output_folder = os.path.join(output_folder, sitename, timestamp)
     os.makedirs(output_folder, exist_ok=True)
     
     # Extract the URL from the raw data
@@ -142,29 +171,37 @@ def save_formatted_data(formatted_data, timestamp, output_folder='output'):
 if __name__ == "__main__":
     # Scrape a single URL
     # url = 'https://michiganlabs.com'
-    # url = 'https://michiganlabs.com/services'
+    url = 'https://caldersolutions.com'
     # url = 'https://www.trulia.com/CA/San_Francisco/'
-    url = 'https://www.seloger.com/immobilier/achat/immo-lyon-69/'
+    # url = 'https://atomicobject.com/platforms/web-app-development'
     
 
     try:
-
         # Extract sitename from URL
         sitename: str = url.split('/')[2]
-
-        # Generate timestamp
         timestamp_start = datetime.now().strftime('%Y%m%d_%H%M%S')
+        print(f"Starting scraping for {sitename} at {timestamp_start}")
+
         
         # Scrape data
-        raw_data = scrape_data(url)
+        # raw_data = scrape_data(url)
+        # save_raw_data(raw_data, sitename, timestamp_start)
         
-        # Save raw data
-        save_raw_data(raw_data, sitename)
+        raw_data = crawl_data(url)
+        pprint.pp(raw_data)
+
+        for raw_page_data in raw_data:
+            save_raw_data(raw_page_data, sitename, timestamp_start)
         
         # Format data
         # formatted_data = format_data(raw_data,phone_fields)
         
         # Save formatted data
         # save_formatted_data(formatted_data, timestamp)
+
+        timestamp_end = datetime.now().strftime('%Y%m%d_%H%M%S')
+        duration = datetime.strptime(timestamp_end, '%Y%m%d_%H%M%S') - datetime.strptime(timestamp_start, '%Y%m%d_%H%M%S')
+        print(f"Finished scraping for {sitename} at {timestamp_end}. Duration: {duration}")
+        
     except Exception as e:
         print(f"An error occurred: {e}")
