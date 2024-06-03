@@ -1,3 +1,4 @@
+
 from firecrawl import FirecrawlApp
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -13,23 +14,47 @@ def scrape_data(url):
     app = FirecrawlApp(api_key=os.getenv('FIRECRAWL_API_KEY'))
     
     # Scrape a single URL
-    scraped_data = app.scrape_url(url,{'pageOptions':{'onlyMainContent': True}})
+    scraped_data = app.scrape_url(url,{'pageOptions':{
+        'onlyMainContent': True,
+        'waitFor': 5000}
+        })
     
+    # print(f"Scraped data: {scraped_data['metadata']}")
+
     # Check if 'markdown' key exists in the scraped data
     if 'markdown' in scraped_data:
-        return scraped_data['markdown']
+        return scraped_data
     else:
         raise KeyError("The key 'markdown' does not exist in the scraped data.")
     
-def save_raw_data(raw_data, timestamp, output_folder='output'):
+def save_raw_data(raw_data, sitename, output_folder='output'):
     # Ensure the output folder exists
+    output_folder = os.path.join(output_folder, sitename)
     os.makedirs(output_folder, exist_ok=True)
     
-    # Save the raw markdown data with timestamp in filename
-    raw_output_path = os.path.join(output_folder, f'rawData_{timestamp}.md')
+    # Extract the URL from the raw data
+    url = raw_data['metadata']['sourceURL']
+    url = url.replace("https://","")
+    url = url.replace("http://","")
+    url = url.rstrip("/")
+    url = url.replace("/","|")
+
+
+    print("url: ", url)
+
+    # Save the raw meta data with url in filename
+    raw_output_path = os.path.join(output_folder, f'rawData{url}.content.md')
     with open(raw_output_path, 'w', encoding='utf-8') as f:
-        f.write(raw_data)
-    print(f"Raw data saved to {raw_output_path}")
+        f.write(raw_data['markdown'])
+    print(f"Raw markdown_content saved to {raw_output_path}")
+
+    # Save the raw markdown data with url in filename
+    raw_output_path = os.path.join(output_folder, f'rawData_{url}.meta.json')
+    with open(raw_output_path, 'w', encoding='utf-8') as fp:
+        json.dump(raw_data['metadata'], fp)
+    print(f"Raw metadata saved to {raw_output_path}")
+
+
 
 def format_data(data, fields=None):
     load_dotenv()
@@ -116,24 +141,30 @@ def save_formatted_data(formatted_data, timestamp, output_folder='output'):
 
 if __name__ == "__main__":
     # Scrape a single URL
-    url = 'https://www.zillow.com/salt-lake-city-ut/'
-    #url = 'https://www.trulia.com/CA/San_Francisco/'
-    #url = 'https://www.seloger.com/immobilier/achat/immo-lyon-69/'
+    # url = 'https://michiganlabs.com'
+    # url = 'https://michiganlabs.com/services'
+    # url = 'https://www.trulia.com/CA/San_Francisco/'
+    url = 'https://www.seloger.com/immobilier/achat/immo-lyon-69/'
     
+
     try:
+
+        # Extract sitename from URL
+        sitename: str = url.split('/')[2]
+
         # Generate timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp_start = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         # Scrape data
         raw_data = scrape_data(url)
         
         # Save raw data
-        save_raw_data(raw_data, timestamp)
+        save_raw_data(raw_data, sitename)
         
         # Format data
-        formatted_data = format_data(raw_data,phone_fields)
+        # formatted_data = format_data(raw_data,phone_fields)
         
         # Save formatted data
-        save_formatted_data(formatted_data, timestamp)
+        # save_formatted_data(formatted_data, timestamp)
     except Exception as e:
         print(f"An error occurred: {e}")
