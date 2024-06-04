@@ -5,15 +5,11 @@ from scraper_data_with_firecrawl import crawl_data
 from dotenv import load_dotenv
 from datetime import datetime
 import os
+import traceback
 
 
 
 if __name__ == "__main__":
-    # Scrape a single URL
-    # url = 'https://michiganlabs.com'
-    # url = 'https://www.trulia.com/CA/San_Francisco/'
-    # url = 'https://atomicobject.com/platforms/web-app-development'
-    
 
     try:
         load_dotenv()
@@ -29,14 +25,13 @@ if __name__ == "__main__":
         # save_raw_data(raw_data, sitename, timestamp_start)
         
         # Crawl site for data
-        print(f"Starting scraping {sitename} at {timestamp_start}")
+        print(f"Starting scraping {url} at {timestamp_start}")
         raw_data = crawl_data(url)
 
         # Organize & save raw data
         organized_data = {}
-        sitemap = {}
         print(f"Organizing raw data for {sitename}...")
-        save_raw_data(raw_data, sitename, timestamp_start, organized_data, sitemap)
+        sitemap = save_raw_data(raw_data, sitename, timestamp_start, organized_data)
 
         # # Clean & save data with AI
         # formatted_data = {}
@@ -49,7 +44,7 @@ if __name__ == "__main__":
 
 
 
-        
+
         
         # Compile Data Into Final Result
         # compiled_data = {}
@@ -78,7 +73,7 @@ if __name__ == "__main__":
         print(f"Finished scraping for {sitename} at {timestamp_end}. Duration: {duration}")
         
     except Exception as e:
-        print(f"An error occurred: {e.with_traceback}")
+        print(traceback.format_exc())
         print(f"An error occurred: {e}")
 
     

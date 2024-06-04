@@ -9,33 +9,48 @@ def crawl_data(url):
 
     # Initialize the FirecrawlApp with your API key
     app = FirecrawlApp(api_key=os.getenv('FIRECRAWL_API_KEY'))
+    crawl_excludes = os.getenv('CRAWLER_EXCLUDES_LIST') or None
+    crawl_includes = os.getenv('CRAWLER_INCLUDES_LIST') or None
+    crawl_limit = os.getenv('CRAWLER_LIMIT') or 15
+    crawl_depth = os.getenv('CRAWLER_DEPTH') or 3
+    crawl_main_content_only = os.getenv('CRAWLER_DEPTH_MAIN_CONTENT_ONLY') or True
 
     params = {
         'crawlerOptions': {
-            'excludes': [os.getenv('CRAWLER_EXCLUDES_LIST')],
-            'includes': [os.getenv('CRAWLER_INCLUDES_LIST')], # leave empty for all pages
-            'limit': os.getenv('CRAWLER_DEPTH'),
+            'excludes': [crawl_excludes],
+            # 'includes': [crawl_includes], # leave empty for all pages
+            'limit': crawl_limit,
+            'depth': crawl_depth,
         },
         'pageOptions': {
-            'onlyMainContent': os.getenv('CRAWLER_DEPTH_MAIN_CONTENT_ONLY')
+            'onlyMainContent': os.getenv(crawl_main_content_only)
         }
     }
-    # crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
-    # print("Crawl job: ", crawl_job_id)
+    if crawl_excludes is not None:
+        params['crawlerOptions']['excludes'] = [crawl_excludes]
+    if crawl_includes is not None:
+        params['crawlerOptions']['includes'] = [crawl_includes]
+    print (f"Params: {params}")
 
-    print("starting wait loop")
+    # crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
+    # print(f"Crawl job for {url} started: {crawl_job_id}")
+
     job_active = True
     while job_active:
-        print("starting wait loop 2")
-        sleep(10)
-        # job_status = app.check_crawl_status(crawl_job_id)
-        job_status = app.check_crawl_status("d36ce23b-e036-4aa7-8418-c0c7ae7a341b")
-        # job_status = app.check_crawl_status("87280c99-e409-4356-a8ce-282bd2bc40a1")
-        print("starting wait loop 3")
+        # job_status = app.check_crawl_status(crawl_job_id["jobId"])
+        # job_status = app.check_crawl_status("04dc4ff2-1c13-4ecd-8573-6afc0f87dd94")
+        # job_status = app.check_crawl_status("70f2bb41-f40d-4bd3-a92d-df2a83a7bfb9")
+        job_status = app.check_crawl_status("89243e98-90d5-46b4-a5be-700049447e65")
         job_active = job_status['status'] == 'active'
         print(f"Job status: {job_status['status']}, {job_status['current']}/{job_status['total']} pages scraped. Job Active: {job_active}")
-    # print(f"{job_status['data'][0]['markdown']}")
-    return job_status
+        if job_active:
+            sleep(10)
+    # print(f"Crawl job completed: {crawl_job_id}")
+    if "data" in job_status and "error" in job_status["data"]:
+        print(f"Error Crawling Site: {job_status['data']['error']}")
+        raise KeyError("Crawl Failed with message: {job_status['data']['error']}")
+    else:
+        return job_status
 
 
 # used for a single page and is not built out correctly yet

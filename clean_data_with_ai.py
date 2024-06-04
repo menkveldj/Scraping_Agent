@@ -1,8 +1,5 @@
-import json
 import os
 from openai import OpenAI
-
-
 
 
 def format_data(data):
