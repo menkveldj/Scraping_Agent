@@ -19,8 +19,22 @@ def add_page_sitemap_basic(sitemap, url_keys):
     return sitemap
 
 
-    
+def add_page_content_to_sitemap(sitemap, url_keys, page_content):
+        if url_keys[0] not in sitemap:
+            print(f"Could not find page in sitemap: {key}")
+            raise KeyError(f"Could not find page in sitemap: {key}")
+        elif len(url_keys) == 1: 
+            sitemap[0]["page_content"] = page_content
+        else:
+            sitemap[0]["sub_pages"] = add_page_content_to_sitemap(sitemap[url_keys[0]]["sub_pages"], url_keys[1:], page_content)
+        return sitemap
 
+def get_url_keys(url):
+    url = url.replace("https://","")
+    url = url.replace("http://","")
+    url = url.rstrip("/")
+    url_keys = url.split("/")
+    return url_keys
 
 
 
