@@ -2,9 +2,8 @@ import os
 from openai import OpenAI
 
 
-def format_data(data):
+def clean_data_with_ai(data):
     # Instantiate the OpenAI client
-    print("API Key: ", os.getenv('OPENAI_API_KEY'))
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
     # Define system message content
@@ -34,7 +33,7 @@ def format_data(data):
     # Check if the response contains the expected data
     if response and response.choices:
         formatted_data = response.choices[0].message.content
-        print(f"Formatted data received from API: {formatted_data}")
+        # print(f"Formatted data received from API: {formatted_data}")
         return formatted_data
     else:
         raise ValueError("The OpenAI API response did not contain the expected choices data.")

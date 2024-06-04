@@ -34,22 +34,24 @@ def crawl_data(url):
 
     # crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
     # print(f"Crawl job for {url} started: {crawl_job_id}")
+    crawl_job_id = {"jobId": "89243e98-90d5-46b4-a5be-700049447e65"}
+    # crawl_job_id = {"jobId": "04dc4ff2-1c13-4ecd-8573-6afc0f87dd94"}
+    # crawl_job_id = {"jobId": "70f2bb41-f40d-4bd3-a92d-df2a83a7bfb9"}
+
 
     job_active = True
     while job_active:
-        # job_status = app.check_crawl_status(crawl_job_id["jobId"])
-        # job_status = app.check_crawl_status("04dc4ff2-1c13-4ecd-8573-6afc0f87dd94")
-        # job_status = app.check_crawl_status("70f2bb41-f40d-4bd3-a92d-df2a83a7bfb9")
-        job_status = app.check_crawl_status("89243e98-90d5-46b4-a5be-700049447e65")
+        job_status = app.check_crawl_status(crawl_job_id["jobId"])
         job_active = job_status['status'] == 'active'
         print(f"Job status: {job_status['status']}, {job_status['current']}/{job_status['total']} pages scraped. Job Active: {job_active}")
         if job_active:
             sleep(10)
-    # print(f"Crawl job completed: {crawl_job_id}")
+    print(f"Crawl job completed: {crawl_job_id}")
     if "data" in job_status and "error" in job_status["data"]:
         print(f"Error Crawling Site: {job_status['data']['error']}")
         raise KeyError("Crawl Failed with message: {job_status['data']['error']}")
     else:
+        job_status["job_id"] = crawl_job_id["jobId"]
         return job_status
 
 

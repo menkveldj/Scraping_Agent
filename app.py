@@ -1,6 +1,5 @@
 
 from save_data import save_raw_data, save_cleaned_data
-from clean_data_with_ai import format_data
 from scraper_data_with_firecrawl import crawl_data
 from dotenv import load_dotenv
 from datetime import datetime
