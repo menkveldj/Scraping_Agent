@@ -25,12 +25,13 @@ def crawl_data(url):
 
     job_active = True
     while job_active:
-        sleep(5)
         # job_status = app.check_crawl_status(crawl_job_id)
         job_status = app.check_crawl_status("cedf28a8-9667-474e-8e01-360d3fc57687")
         job_active = job_status['status'] == 'active'
         print(f"Job status: {job_status['status']}, {job_status['current']}/{job_status['total']} pages scraped")
-
+        if job_active:
+            sleep(5)
+    # print(f"{job_status['data'][0]['markdown']}")
     return job_status
 
 

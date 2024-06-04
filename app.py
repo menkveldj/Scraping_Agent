@@ -1,7 +1,7 @@
 
-from save_raw_data import save_raw_data
-from format_data import save_formatted_data, format_data
-from scraper import crawl_data
+from save_data import save_raw_data, save_cleaned_data
+from clean_data_with_ai import format_data
+from scraper_data_with_firecrawl import crawl_data
 from dotenv import load_dotenv
 import pprint
 from datetime import datetime
@@ -30,21 +30,23 @@ if __name__ == "__main__":
         print(f"Starting scraping {sitename} at {timestamp_start}")
         raw_data = crawl_data(url)
 
-        # Organize data
+        # Organize & save raw data
         organized_data = {}
         sitemap = {}
-        print(f"Processing raw data for {sitename}...")
+        print(f"Organizing raw data for {sitename}...")
         save_raw_data(raw_data, sitename, timestamp_start, organized_data, sitemap)
 
-        # Format data
+        # Clean & save data with AI
         formatted_data = {}
-
         for url in organized_data:
-            print(f"Processing organized data for {url}...")
-            formatted_data = format_data(organized_data[url]['markdown'])
-            pprint.pprint(f"Formatted Data: {formatted_data}")
-            # save_formatted_data(organized_data,sitename,timestamp_start,formatted_data)
+            print(f"Cleaning organized data for {url}...")
+            clean_data = format_data(organized_data[url]['markdown'])
+            formatted_data[url] = clean_data
+            save_cleaned_data(clean_data, url,sitename,timestamp_start)
         
+        # Compile Data Into Final Result
+        
+
         # print(f"Processing organized data for {sitename}...")
         # formatted_data = format_data(organized_data)
         # save_formatted_data(organized_data,sitename,timestamp_start,formatted_data)
