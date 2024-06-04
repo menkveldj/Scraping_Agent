@@ -2,7 +2,7 @@ import json
 import os
 from helpers import add_page_and_meta_to_sitemap, add_page_sitemap_basic, get_url_keys, add_page_content_to_sitemap
 from clean_data_with_ai import clean_data_with_ai
-
+import concurrent.futures
 
 def save_raw_data(raw_data, sitename, timestamp, organized_data, output_folder='output'):
    
@@ -68,24 +68,35 @@ def save_cleaned_data(organized_data, url, sitename, sitemap, timestamp, clean_d
     full_sitemap = {}
 
     pageCount = 1
-    for url in organized_data:
-        print(f"Cleaning page {pageCount} of {len(organized_data)}: {url}...")
+                        
 
-        # use ai to clean data
-        clean_data[url] = clean_data_with_ai(organized_data[url]['markdown'])
-        # clean_data[url] = f"this is clean data: {url}"
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(clean_data_test, organized_page): organized_page for organized_page in organized_data}
+        # futures = {executor.submit(clean_data_with_ai, organized_page): organized_page for organized_page in organized_data}
+        # clean_data[url] = clean_data_with_ai(organized_data[url]['markdown'])
+        for future in concurrent.futures.as_completed(futures): 
+            organized_page = futures[future]
+            try:
+                clean_page = future.result()
+            except Exception as exc:
+                print(f'{url} generated an exception: {exc}')
+            else:
+                print(f'{url} page was cleaned: {clean_page}')
+                clean_data[url] = clean_page
+                print(f"Cleaning page {pageCount} of {len(organized_data)}: {url}...")
+    
+                # update sitemap with clean data
+                url_keys = get_url_keys(url)
+                full_sitemap = add_page_content_to_sitemap(sitemap, url_keys, clean_data[url])
 
-        # update sitemap with clean data
-        url_keys = get_url_keys(url)
-        full_sitemap = add_page_content_to_sitemap(sitemap, url_keys, clean_data[url])
+                fileNameFriendlyUrl = url.replace("/","|")
+                # Save the raw meta data with url in filename
+                raw_output_path = os.path.join(output_folder, f'{fileNameFriendlyUrl}.md')
+                with open(raw_output_path, 'w', encoding='utf-8') as f:
+                    f.write(clean_data[url])
+                pageCount += 1
 
-        fileNameFriendlyUrl = url.replace("/","|")
-        # Save the raw meta data with url in filename
-        raw_output_path = os.path.join(output_folder, f'{fileNameFriendlyUrl}.md')
-        with open(raw_output_path, 'w', encoding='utf-8') as f:
-            f.write(clean_data[url])
-        pageCount += 1
-
+    print("Concurent data cleaning finished...")
     # Save the full sitemap
     raw_output_path = os.path.join(root_output_folder, f'sitemap_full_{sitename}.json')
     with open(raw_output_path, 'w', encoding='utf-8') as fp:
@@ -94,8 +105,14 @@ def save_cleaned_data(organized_data, url, sitename, sitemap, timestamp, clean_d
      # Save clean data into a single file
     raw_output_path = os.path.join(root_output_folder, f'website_content_{sitename}.md')
     with open(raw_output_path, 'w', encoding='utf-8') as fp:
-        for content in clean_data:
-         f.write(content)
-         f.write("\n\n\n\n----------------------------------------------------\n\n\n\n")  
+        for url in clean_data:
+            fp.write(clean_data[url])
+            fp.write("\n\n\n\n----------------------------------------------------\n\n\n\n")  
 
     return full_sitemap
+
+from time import sleep
+def clean_data_test(data):
+    sleep(4)
+    return(f"this is clean data: {data}")
+        
