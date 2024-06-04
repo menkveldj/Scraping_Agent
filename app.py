@@ -38,13 +38,18 @@ if __name__ == "__main__":
         print(f"Organizing raw data for {sitename}...")
         save_raw_data(raw_data, sitename, timestamp_start, organized_data, sitemap)
 
-        # Clean & save data with AI
-        formatted_data = {}
-        for url in organized_data:
-            print(f"Cleaning organized data for {url}...")
-            clean_data = format_data(organized_data[url]['markdown'])
-            formatted_data[url] = clean_data
-            save_cleaned_data(clean_data, url,sitename,timestamp_start)
+        # # Clean & save data with AI
+        # formatted_data = {}
+        # for url in organized_data:
+        #     print(f"Cleaning organized data for {url}...")
+        #     clean_data = format_data(organized_data[url]['markdown'])
+        #     formatted_data[url] = clean_data
+        #     save_cleaned_data(clean_data, url,sitename,timestamp_start)
+
+
+
+
+        
         
         # Compile Data Into Final Result
         # compiled_data = {}
