@@ -108,7 +108,7 @@ def save_cleaned_data(organized_data, url, sitename, sitemap, timestamp, clean_d
     with open(raw_output_path, 'w', encoding='utf-8') as fp:
         for url in clean_data:
             fp.write(clean_data[url])
-            fp.write("\n\n\n\n----------------------------------------------------\n\n\n\n")  
+            fp.write('\n---\n\n\n{url}\n---\n')  
 
     return full_sitemap
 
