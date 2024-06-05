@@ -3,3 +3,4 @@ venv
 .venv
 output
 __pycache__
+notes.txt
