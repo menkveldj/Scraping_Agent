@@ -24,15 +24,22 @@ def crawl_data(url):
             'onlyMainContent': os.getenv(crawl_main_content_only)
         }
     }
+
+    # add includes and excludes if they are provided
     if crawl_excludes is not None:
         params['crawlerOptions']['excludes'] = [crawl_excludes]
     if crawl_includes is not None:
         params['crawlerOptions']['includes'] = [crawl_includes]
     print (f"Params: {params}")
 
-    # crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
-    crawl_job_id = {"jobId": "778b86d3-70fd-4cd5-a26f-64178377d3c4"}
-    print(f"Crawl job for {url} started: {crawl_job_id}")
+    # determine if we are running a new job or an old job
+    crawl_job_rerun = os.getenv('AI_RECLEAN_CRAWL_JOB', "")
+    if not crawl_job_rerun:
+        crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
+        print(f"New Crawl job for {url} started: {crawl_job_id}")
+    else:
+        crawl_job_id = {"jobId": crawl_job_rerun}
+        print(f"Reprocessesing existing Crawl job for {url} started: {crawl_job_id}")
     
 
     job_active = True
