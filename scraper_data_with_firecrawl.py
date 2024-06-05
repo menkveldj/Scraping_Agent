@@ -17,8 +17,6 @@ def crawl_data(url):
 
     params = {
         'crawlerOptions': {
-            'excludes': [crawl_excludes],
-            # 'includes': [crawl_includes], # leave empty for all pages
             'limit': crawl_limit,
             'depth': crawl_depth,
         },
@@ -32,12 +30,9 @@ def crawl_data(url):
         params['crawlerOptions']['includes'] = [crawl_includes]
     print (f"Params: {params}")
 
-    # crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
-    # print(f"Crawl job for {url} started: {crawl_job_id}")
-    crawl_job_id = {"jobId": "89243e98-90d5-46b4-a5be-700049447e65"}
-    # crawl_job_id = {"jobId": "04dc4ff2-1c13-4ecd-8573-6afc0f87dd94"}
-    # crawl_job_id = {"jobId": "70f2bb41-f40d-4bd3-a92d-df2a83a7bfb9"}
-
+    crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
+    print(f"Crawl job for {url} started: {crawl_job_id}")
+    # crawl_job_id = {"jobId": "89243e98-90d5-46b4-a5be-700049447e65"}
 
     job_active = True
     while job_active:
