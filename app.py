@@ -14,6 +14,7 @@ if __name__ == "__main__":
         load_dotenv()
         
         url = os.getenv('WEBSITE_URL')
+        crawl_only = os.getenv('CRAWL_ONLY', False)
 
         # Extract sitename from URL
         sitename: str = url.split('/')[2]
@@ -33,9 +34,10 @@ if __name__ == "__main__":
         sitemap, url_keys = save_raw_data(raw_data, sitename, timestamp_start, organized_data)
 
         # # Clean & save data with AI
-        clean_data = {}
-        print(f"Cleaning organized data for {url}...")
-        sitemap = save_cleaned_data(organized_data, url,sitename, sitemap, timestamp_start, clean_data)
+        if not crawl_only:
+            clean_data = {}
+            print(f"Cleaning organized data for {url}...")
+            sitemap = save_cleaned_data(organized_data, url,sitename, sitemap, timestamp_start, clean_data)
 
         timestamp_end = datetime.now().strftime('%Y%m%d_%H%M%S')
         duration = datetime.strptime(timestamp_end, '%Y%m%d_%H%M%S') - datetime.strptime(timestamp_start, '%Y%m%d_%H%M%S')
