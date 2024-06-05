@@ -3,7 +3,7 @@ from openai import OpenAI
 from time import sleep
 
 
-def clean_data_with_ai(url, data):
+def clean_data_with_ai(url, data, rateLimit=20):
     # Instantiate the OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -34,6 +34,11 @@ def clean_data_with_ai(url, data):
     if response and response.choices:
         formatted_data = response.choices[0].message.content
         return url, formatted_data
+    elif response and response.error:
+        if response.error.code == "rate_limit_exceeded":
+            print(f"Rate limit exceeded. Waiting {rateLimit} seconds before retrying.")
+            sleep(rateLimit)
+            return clean_data_with_ai(url, data, rateLimit*2)
     else:
         raise ValueError("The OpenAI API response did not contain the expected choices data.")
     

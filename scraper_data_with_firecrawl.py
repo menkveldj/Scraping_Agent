@@ -30,9 +30,10 @@ def crawl_data(url):
         params['crawlerOptions']['includes'] = [crawl_includes]
     print (f"Params: {params}")
 
-    crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
+    # crawl_job_id = app.crawl_url(url, params=params, wait_until_done=False)
+    crawl_job_id = {"jobId": "778b86d3-70fd-4cd5-a26f-64178377d3c4"}
     print(f"Crawl job for {url} started: {crawl_job_id}")
-    # crawl_job_id = {"jobId": "89243e98-90d5-46b4-a5be-700049447e65"}
+    
 
     job_active = True
     while job_active:
