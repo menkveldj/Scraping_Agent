@@ -39,7 +39,7 @@ def clean_data_with_ai(url, data, rateLimit=20):
             print(f"Rate limit exceeded. Waiting {rateLimit} seconds before retrying.")
             sleep(rateLimit)
             url, formatted_data = clean_data_with_ai(url, data, rateLimit*2)
-            return url, formatted_data
+            return
     else:
         raise ValueError("The OpenAI API response did not contain the expected choices data.")
     

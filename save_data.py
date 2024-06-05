@@ -71,6 +71,7 @@ def save_cleaned_data(organized_data, url, sitename, sitemap, timestamp, clean_d
     total_pages = len(organized_data)
 
     max_concurrency = int(os.getenv('AI_REQUESTS_MAX_CONCURRENCY', 1))
+    print(f"Max concurrency: {max_concurrency}")
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_concurrency) as executor:
         futures = []
         for u in organized_data:
@@ -85,6 +86,12 @@ def save_cleaned_data(organized_data, url, sitename, sitemap, timestamp, clean_d
                 print(f"page {pageCount} of {total_pages} cleaned: {uc}")
                 clean_data[uc] = clean_page_data
     
+                # clean markdown tags if they exist
+                clean_data[uc] = clean_data[uc].removeprefix('```markdown')
+                clean_data[uc] = clean_data[uc].removeprefix('\n')
+                clean_data[uc] = clean_data[uc].removesuffix('```')
+                clean_data[uc] = clean_data[uc].removesuffix('\n')
+
                 # update sitemap with clean data
                 url_keys = get_url_keys(uc)
                 full_sitemap = add_page_content_to_sitemap(sitemap, url_keys, clean_data[uc])
@@ -107,8 +114,9 @@ def save_cleaned_data(organized_data, url, sitename, sitemap, timestamp, clean_d
     raw_output_path = os.path.join(root_output_folder, f'website_content_{sitename}.md')
     with open(raw_output_path, 'w', encoding='utf-8') as fp:
         for url in clean_data:
+            fp.write(f"{url}\n---\n")  
             fp.write(clean_data[url])
-            fp.write('\n---\n\n\n{url}\n---\n')  
+            fp.write(f"\n\n\n\n")  
 
     return full_sitemap
 
