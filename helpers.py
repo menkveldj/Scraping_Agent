@@ -7,6 +7,7 @@ def add_page_and_meta_to_sitemap(sitemap, url_keys, metadata):
     return sitemap
 
 def add_page_sitemap_basic(sitemap, url_keys):
+    
     # print(f"Sitemap: {sitemap}, URL Keys: {url_keys}")
     if url_keys[0] not in sitemap:
         # print(f"Adding new page: {url_keys[0]}")
@@ -33,11 +34,17 @@ def get_url_keys(url):
     url = url.replace("https://","")
     url = url.replace("http://","")
     url = url.rstrip("/")
+    url = url.replace("\r","")
+    url = url.replace("\n","")
+    url = url.replace(" ","")
     url_keys = url.split("/")
     return url_keys
 
 
 
-
-
-    
+def split_list_into_params(list):
+    list = list.replace("'","")
+    list = list.replace("\"","")
+    list = list.replace(" ","")
+    params = list.split(",")
+    return params

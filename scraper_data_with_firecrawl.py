@@ -1,7 +1,7 @@
 import os
 from time import sleep
 from firecrawl import FirecrawlApp
-
+from helpers import split_list_into_params
 
 
 # crawl_data function is used to crawl a website and return the data
@@ -14,6 +14,7 @@ def crawl_data(url):
     crawl_limit = os.getenv('CRAWLER_LIMIT') or 15
     crawl_depth = os.getenv('CRAWLER_DEPTH') or 3
     crawl_main_content_only = os.getenv('CRAWLER_DEPTH_MAIN_CONTENT_ONLY') or True
+    sitemap_only = os.getenv('CRAWLER_SITEMAP_ONLY') or "False"
 
     params = {
         'crawlerOptions': {
@@ -27,9 +28,11 @@ def crawl_data(url):
 
     # add includes and excludes if they are provided
     if crawl_excludes is not None:
-        params['crawlerOptions']['excludes'] = [crawl_excludes]
+        params['crawlerOptions']['excludes'] = split_list_into_params(crawl_excludes)
     if crawl_includes is not None:
-        params['crawlerOptions']['includes'] = [crawl_includes]
+        params['crawlerOptions']['includes'] = split_list_into_params(crawl_includes)
+    if sitemap_only == "True":
+        params['crawlerOptions']['returnOnlyUrls'] = True
     print (f"Params: {params}")
 
     # determine if we are running a new job or an old job

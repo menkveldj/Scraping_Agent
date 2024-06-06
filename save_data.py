@@ -5,7 +5,8 @@ from clean_data_with_ai import clean_data_with_ai, clean_data_test
 import concurrent.futures
 
 def save_raw_data(raw_data, sitename, timestamp, organized_data, output_folder='output'):
-   
+    sitemap_only = os.getenv('CRAWLER_SITEMAP_ONLY') or "False"
+
     # Ensure the output folder exists
     root_output_folder = os.path.join(output_folder, sitename, timestamp)
     os.makedirs(output_folder, exist_ok=True)
@@ -15,40 +16,46 @@ def save_raw_data(raw_data, sitename, timestamp, organized_data, output_folder='
     full_sitemap = {}
     basic_sitemap = {}
 
-    for raw_page_data in raw_data['data']:
-        
-        # Extract the URL from the raw data
-        url = raw_page_data['metadata']['sourceURL']
-        url_keys = get_url_keys(url)
-        full_sitemap = add_page_and_meta_to_sitemap(full_sitemap, url_keys, raw_page_data['metadata'])
-        basic_sitemap = add_page_sitemap_basic(basic_sitemap, url_keys)
+    if sitemap_only != "True":
+        for raw_page_data in raw_data['data']:
+            
+            # Extract the URL from the raw data
+            url = raw_page_data['metadata']['sourceURL']
+            url_keys = get_url_keys(url)
+            full_sitemap = add_page_and_meta_to_sitemap(full_sitemap, url_keys, raw_page_data['metadata'])
+            basic_sitemap = add_page_sitemap_basic(basic_sitemap, url_keys)
 
-        # organize data
-        organized_data[url] = {}
-        organized_data[url]['markdown'] = raw_page_data['markdown']
-        organized_data[url]['metadata'] = raw_page_data['metadata']
+            # organize data
+            organized_data[url] = {}
+            organized_data[url]['markdown'] = raw_page_data['markdown']
+            organized_data[url]['metadata'] = raw_page_data['metadata']
 
-        fileNameFriendlyUrl = url.replace("/","|")
-        # Save the raw meta data with url in filename
-        raw_output_path = os.path.join(output_folder, f'rawData{fileNameFriendlyUrl}.content.md')
-        with open(raw_output_path, 'w', encoding='utf-8') as f:
-            f.write(raw_page_data['markdown'])
+            fileNameFriendlyUrl = url.replace("/","|")
+            # Save the raw meta data with url in filename
+            raw_output_path = os.path.join(output_folder, f'rawData{fileNameFriendlyUrl}.content.md')
+            with open(raw_output_path, 'w', encoding='utf-8') as f:
+                f.write(raw_page_data['markdown'])
 
-        # Save the raw markdown data with url in filename
-        raw_output_path = os.path.join(output_folder, f'rawData_{fileNameFriendlyUrl}.meta.json')
+            # Save the raw markdown data with url in filename
+            raw_output_path = os.path.join(output_folder, f'rawData_{fileNameFriendlyUrl}.meta.json')
+            with open(raw_output_path, 'w', encoding='utf-8') as fp:
+                json.dump(raw_page_data['metadata'], fp, indent=4)
+
+        # write out scraper job id
+        if "job_id" in raw_data:
+            raw_output_path = os.path.join(output_folder, f'job_id.txt')
+            with open(raw_output_path, 'w', encoding='utf-8') as f:
+                f.write(raw_data['job_id'])
+
+        # Save the sitemap
+        raw_output_path = os.path.join(root_output_folder, f'sitemap_meta_{sitename}.json')
         with open(raw_output_path, 'w', encoding='utf-8') as fp:
-            json.dump(raw_page_data['metadata'], fp, indent=4)
-
-    # write out scraper job id
-    if "job_id" in raw_data:
-        raw_output_path = os.path.join(output_folder, f'job_id.txt')
-        with open(raw_output_path, 'w', encoding='utf-8') as f:
-            f.write(raw_data['job_id'])
-
-    # Save the sitemap
-    raw_output_path = os.path.join(root_output_folder, f'sitemap_meta_{sitename}.json')
-    with open(raw_output_path, 'w', encoding='utf-8') as fp:
-        json.dump(full_sitemap, fp, indent=4)
+            json.dump(full_sitemap, fp, indent=4)
+    else:
+        for url in raw_data['data']:
+            url_keys = get_url_keys(url["url"])
+            basic_sitemap = add_page_sitemap_basic(basic_sitemap, url_keys)
+    
     # Save the basic sitemap
     raw_output_path = os.path.join(root_output_folder, f'sitemap_simple_{sitename}.json')
     with open(raw_output_path, 'w', encoding='utf-8') as fp:
