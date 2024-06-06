@@ -11,7 +11,7 @@ The scraping agent will scrape data from a website, organize it into markdown an
 
 ## Installation
 
-- create virtual environment `python -m venv venv`
+- create virtual environment `python -m venv .venv`
 - get into venv `source .venv/bin/activate`
 - add api keys to .env
     ```
